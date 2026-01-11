@@ -36612,113 +36612,291 @@ function getInputs() {
             .map((s) => s.trim()),
     };
 }
+async function checkEdgeFunctionsTask(inputs) {
+    try {
+        core.info('Fetching Edge Functions...');
+        const [devFunctions, prdFunctions] = await Promise.all([
+            (0, functions_1.getEdgeFunctions)(inputs.devProjectRef, inputs.supabaseAccessToken),
+            (0, functions_1.getEdgeFunctions)(inputs.prdProjectRef, inputs.supabaseAccessToken),
+        ]);
+        const diff = (0, compare_1.compareEdgeFunctions)(devFunctions, prdFunctions);
+        return {
+            name: 'Edge Functions',
+            diff,
+            error: null,
+            devCount: devFunctions.length,
+            prdCount: prdFunctions.length,
+        };
+    }
+    catch (error) {
+        return {
+            name: 'Edge Functions',
+            diff: null,
+            error: error instanceof Error ? error : new Error(String(error)),
+            devCount: 0,
+            prdCount: 0,
+        };
+    }
+}
+async function checkRlsPoliciesTask(inputs) {
+    try {
+        core.info('Fetching RLS Policies...');
+        const [devPolicies, prdPolicies] = await Promise.all([
+            (0, rls_1.getRlsPolicies)(inputs.devDbUrl, inputs.excludedSchemas),
+            (0, rls_1.getRlsPolicies)(inputs.prdDbUrl, inputs.excludedSchemas),
+        ]);
+        const diff = (0, compare_1.compareRlsPolicies)(devPolicies, prdPolicies);
+        return {
+            name: 'RLS Policies',
+            diff,
+            error: null,
+            devCount: devPolicies.length,
+            prdCount: prdPolicies.length,
+        };
+    }
+    catch (error) {
+        return {
+            name: 'RLS Policies',
+            diff: null,
+            error: error instanceof Error ? error : new Error(String(error)),
+            devCount: 0,
+            prdCount: 0,
+        };
+    }
+}
+async function checkSqlFunctionsTask(inputs) {
+    try {
+        core.info('Fetching SQL Functions...');
+        const [devFunctions, prdFunctions] = await Promise.all([
+            (0, sql_functions_1.getSqlFunctions)(inputs.devDbUrl, inputs.excludedSchemas),
+            (0, sql_functions_1.getSqlFunctions)(inputs.prdDbUrl, inputs.excludedSchemas),
+        ]);
+        const diff = (0, compare_1.compareSqlFunctions)(devFunctions, prdFunctions);
+        return {
+            name: 'SQL Functions',
+            diff,
+            error: null,
+            devCount: devFunctions.length,
+            prdCount: prdFunctions.length,
+        };
+    }
+    catch (error) {
+        return {
+            name: 'SQL Functions',
+            diff: null,
+            error: error instanceof Error ? error : new Error(String(error)),
+            devCount: 0,
+            prdCount: 0,
+        };
+    }
+}
+async function checkSchemasTask(inputs) {
+    try {
+        core.info('Fetching Schemas...');
+        const [devSchemas, prdSchemas] = await Promise.all([
+            (0, schemas_1.getSchemas)(inputs.devDbUrl, inputs.excludedSchemas),
+            (0, schemas_1.getSchemas)(inputs.prdDbUrl, inputs.excludedSchemas),
+        ]);
+        const diff = (0, compare_1.compareSchemas)(devSchemas, prdSchemas);
+        return {
+            name: 'Schemas',
+            diff,
+            error: null,
+            devCount: devSchemas.length,
+            prdCount: prdSchemas.length,
+        };
+    }
+    catch (error) {
+        return {
+            name: 'Schemas',
+            diff: null,
+            error: error instanceof Error ? error : new Error(String(error)),
+            devCount: 0,
+            prdCount: 0,
+        };
+    }
+}
+function hasDiff(diff) {
+    return (diff.onlyInDev.length > 0 ||
+        diff.onlyInPrd.length > 0 ||
+        diff.different.length > 0);
+}
 async function run() {
     try {
         const inputs = getInputs();
         const summary = { hasDiff: false };
+        const errors = [];
         core.info('Starting Supabase environment diff check...');
+        core.info('Running all checks in parallel...');
+        // Run all checks in parallel
+        const tasks = [];
         if (inputs.checkEdgeFunctions) {
-            core.startGroup('Edge Functions');
-            core.info('Fetching Edge Functions...');
-            const [devFunctions, prdFunctions] = await Promise.all([
-                (0, functions_1.getEdgeFunctions)(inputs.devProjectRef, inputs.supabaseAccessToken),
-                (0, functions_1.getEdgeFunctions)(inputs.prdProjectRef, inputs.supabaseAccessToken),
-            ]);
-            core.info(`dev: ${devFunctions.length}, prod: ${prdFunctions.length}`);
-            const diff = (0, compare_1.compareEdgeFunctions)(devFunctions, prdFunctions);
-            summary.edgeFunctions = diff;
-            if (diff.onlyInDev.length > 0 ||
-                diff.onlyInPrd.length > 0 ||
-                diff.different.length > 0) {
-                summary.hasDiff = true;
-                core.warning('Differences found in Edge Functions');
-            }
-            core.setOutput('edge_functions_diff', JSON.stringify(diff));
-            core.endGroup();
+            tasks.push(checkEdgeFunctionsTask(inputs));
         }
         if (inputs.checkRlsPolicies) {
-            core.startGroup('RLS Policies');
-            core.info('Fetching RLS Policies...');
-            const [devPolicies, prdPolicies] = await Promise.all([
-                (0, rls_1.getRlsPolicies)(inputs.devDbUrl, inputs.excludedSchemas),
-                (0, rls_1.getRlsPolicies)(inputs.prdDbUrl, inputs.excludedSchemas),
-            ]);
-            core.info(`dev: ${devPolicies.length}, prod: ${prdPolicies.length}`);
-            const diff = (0, compare_1.compareRlsPolicies)(devPolicies, prdPolicies);
-            summary.rlsPolicies = diff;
-            if (diff.onlyInDev.length > 0 ||
-                diff.onlyInPrd.length > 0 ||
-                diff.different.length > 0) {
-                summary.hasDiff = true;
-                core.warning('Differences found in RLS Policies');
-            }
-            core.setOutput('rls_policies_diff', JSON.stringify(diff));
-            core.endGroup();
+            tasks.push(checkRlsPoliciesTask(inputs));
         }
         if (inputs.checkSqlFunctions) {
-            core.startGroup('SQL Functions');
-            core.info('Fetching SQL Functions...');
-            const [devFunctions, prdFunctions] = await Promise.all([
-                (0, sql_functions_1.getSqlFunctions)(inputs.devDbUrl, inputs.excludedSchemas),
-                (0, sql_functions_1.getSqlFunctions)(inputs.prdDbUrl, inputs.excludedSchemas),
-            ]);
-            core.info(`dev: ${devFunctions.length}, prod: ${prdFunctions.length}`);
-            const diff = (0, compare_1.compareSqlFunctions)(devFunctions, prdFunctions);
-            summary.sqlFunctions = diff;
-            if (diff.onlyInDev.length > 0 ||
-                diff.onlyInPrd.length > 0 ||
-                diff.different.length > 0) {
-                summary.hasDiff = true;
-                core.warning('Differences found in SQL Functions');
-            }
-            core.setOutput('sql_functions_diff', JSON.stringify(diff));
-            core.endGroup();
+            tasks.push(checkSqlFunctionsTask(inputs));
         }
         if (inputs.checkSchemas) {
-            core.startGroup('Schemas');
-            core.info('Fetching Schemas...');
-            const [devSchemas, prdSchemas] = await Promise.all([
-                (0, schemas_1.getSchemas)(inputs.devDbUrl, inputs.excludedSchemas),
-                (0, schemas_1.getSchemas)(inputs.prdDbUrl, inputs.excludedSchemas),
-            ]);
-            core.info(`dev: ${devSchemas.length}, prod: ${prdSchemas.length}`);
-            const diff = (0, compare_1.compareSchemas)(devSchemas, prdSchemas);
-            summary.schemas = diff;
-            if (diff.onlyInDev.length > 0 ||
-                diff.onlyInPrd.length > 0 ||
-                diff.different.length > 0) {
-                summary.hasDiff = true;
-                core.warning('Differences found in Schemas');
+            tasks.push(checkSchemasTask(inputs));
+        }
+        const results = await Promise.all(tasks);
+        // Process results
+        for (const result of results) {
+            core.startGroup(result.name);
+            if (result.error) {
+                core.error(`Error in ${result.name}: ${result.error.message}`);
+                core.error(`Stack trace: ${result.error.stack}`);
+                errors.push({ name: result.name, error: result.error });
             }
-            core.setOutput('schemas_diff', JSON.stringify(diff));
+            else if (result.diff) {
+                core.info(`dev: ${result.devCount}, prod: ${result.prdCount}`);
+                if (hasDiff(result.diff)) {
+                    summary.hasDiff = true;
+                    core.warning(`Differences found in ${result.name}`);
+                }
+                // Set outputs and summary based on result name
+                switch (result.name) {
+                    case 'Edge Functions':
+                        summary.edgeFunctions = result.diff;
+                        core.setOutput('edge_functions_diff', JSON.stringify(result.diff));
+                        break;
+                    case 'RLS Policies':
+                        summary.rlsPolicies = result.diff;
+                        core.setOutput('rls_policies_diff', JSON.stringify(result.diff));
+                        break;
+                    case 'SQL Functions':
+                        summary.sqlFunctions = result.diff;
+                        core.setOutput('sql_functions_diff', JSON.stringify(result.diff));
+                        break;
+                    case 'Schemas':
+                        summary.schemas = result.diff;
+                        core.setOutput('schemas_diff', JSON.stringify(result.diff));
+                        break;
+                }
+            }
+            core.endGroup();
+        }
+        // Report errors
+        if (errors.length > 0) {
+            core.startGroup('Errors Summary');
+            for (const { name, error } of errors) {
+                core.error(`${name}: ${error.message}`);
+            }
             core.endGroup();
         }
         core.setOutput('has_diff', summary.hasDiff.toString());
         core.setOutput('diff_summary', JSON.stringify(summary));
-        core.startGroup('PR Comment');
-        await (0, comment_1.postPrComment)(inputs.githubToken, summary);
-        core.info('Posted PR comment');
-        core.endGroup();
+        // Post PR comment (only if no critical errors)
+        if (errors.length === 0) {
+            core.startGroup('PR Comment');
+            try {
+                await (0, comment_1.postPrComment)(inputs.githubToken, summary);
+                core.info('Posted PR comment');
+            }
+            catch (error) {
+                const commentError = error instanceof Error ? error : new Error(String(error));
+                core.error(`Failed to post PR comment: ${commentError.message}`);
+                core.error(`Stack trace: ${commentError.stack}`);
+            }
+            core.endGroup();
+        }
         if (summary.hasDiff) {
             core.warning('Differences detected between environments');
             if (inputs.failOnDiff) {
                 core.setFailed('Differences detected between environments (fail_on_diff=true)');
             }
         }
-        else {
+        else if (errors.length === 0) {
             core.info('No differences between environments');
+        }
+        // Fail if there were any errors
+        if (errors.length > 0) {
+            const errorMessages = errors.map((e) => `${e.name}: ${e.error.message}`).join('; ');
+            core.setFailed(`Errors occurred during checks: ${errorMessages}`);
         }
     }
     catch (error) {
         if (error instanceof Error) {
+            core.error(`Fatal error: ${error.message}`);
+            core.error(`Stack trace: ${error.stack}`);
             core.setFailed(error.message);
         }
         else {
+            core.error(`Fatal error: ${String(error)}`);
             core.setFailed('An unexpected error occurred');
         }
     }
 }
 run();
+
+
+/***/ }),
+
+/***/ 5281:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SQL = void 0;
+exports.loadSql = loadSql;
+const fs = __importStar(__nccwpck_require__(9896));
+const path = __importStar(__nccwpck_require__(6928));
+const sqlCache = new Map();
+function loadSql(filename) {
+    if (sqlCache.has(filename)) {
+        return sqlCache.get(filename);
+    }
+    const sqlPath = path.join(__dirname, filename);
+    const sql = fs.readFileSync(sqlPath, 'utf-8');
+    sqlCache.set(filename, sql);
+    return sql;
+}
+exports.SQL = {
+    RLS_POLICIES: 'rls-policies.sql',
+    TARGET_SCHEMAS: 'target-schemas.sql',
+    SQL_FUNCTIONS: 'sql-functions.sql',
+    TABLES: 'tables.sql',
+    COLUMNS: 'columns.sql',
+    INDEXES: 'indexes.sql',
+    CONSTRAINTS: 'constraints.sql',
+};
 
 
 /***/ }),
@@ -36765,26 +36943,14 @@ async function getEdgeFunctions(projectRef, accessToken) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getRlsPolicies = getRlsPolicies;
 const pg_1 = __nccwpck_require__(3273);
-const RLS_QUERY = `
-SELECT
-  schemaname AS schema_name,
-  tablename AS table_name,
-  policyname AS policy_name,
-  permissive,
-  roles,
-  cmd,
-  qual,
-  with_check
-FROM pg_policies
-WHERE schemaname NOT IN ($1)
-ORDER BY schemaname, tablename, policyname
-`;
+const loader_1 = __nccwpck_require__(5281);
 async function getRlsPolicies(dbUrl, excludedSchemas) {
     const client = new pg_1.Client({ connectionString: dbUrl });
     try {
         await client.connect();
+        const query = (0, loader_1.loadSql)(loader_1.SQL.RLS_POLICIES);
         const excludedSchemasStr = excludedSchemas.join(',');
-        const result = await client.query(RLS_QUERY, [excludedSchemasStr]);
+        const result = await client.query(query, [excludedSchemasStr]);
         return result.rows.map((row) => ({
             schemaName: row.schema_name,
             tableName: row.table_name,
@@ -36812,66 +36978,24 @@ async function getRlsPolicies(dbUrl, excludedSchemas) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSchemas = getSchemas;
 const pg_1 = __nccwpck_require__(3273);
-const TABLES_QUERY = `
-SELECT
-  table_schema AS schema_name,
-  table_name
-FROM information_schema.tables
-WHERE table_type = 'BASE TABLE'
-  AND table_schema NOT IN ($1)
-ORDER BY table_schema, table_name
-`;
-const COLUMNS_QUERY = `
-SELECT
-  column_name,
-  data_type,
-  is_nullable,
-  column_default,
-  character_maximum_length
-FROM information_schema.columns
-WHERE table_schema = $1 AND table_name = $2
-ORDER BY ordinal_position
-`;
-const INDEXES_QUERY = `
-SELECT
-  indexname AS index_name,
-  indexdef AS index_def
-FROM pg_indexes
-WHERE schemaname = $1 AND tablename = $2
-ORDER BY indexname
-`;
-const CONSTRAINTS_QUERY = `
-SELECT
-  c.conname AS constraint_name,
-  CASE c.contype
-    WHEN 'p' THEN 'PRIMARY KEY'
-    WHEN 'f' THEN 'FOREIGN KEY'
-    WHEN 'u' THEN 'UNIQUE'
-    WHEN 'c' THEN 'CHECK'
-    WHEN 'x' THEN 'EXCLUDE'
-    ELSE c.contype::text
-  END AS constraint_type,
-  pg_get_constraintdef(c.oid) AS constraint_def
-FROM pg_constraint c
-JOIN pg_namespace n ON n.oid = c.connamespace
-JOIN pg_class t ON t.oid = c.conrelid
-WHERE n.nspname = $1 AND t.relname = $2
-ORDER BY c.conname
-`;
+const loader_1 = __nccwpck_require__(5281);
 async function getSchemas(dbUrl, excludedSchemas) {
     const client = new pg_1.Client({ connectionString: dbUrl });
     try {
         await client.connect();
+        const tablesQuery = (0, loader_1.loadSql)(loader_1.SQL.TABLES);
+        const columnsQuery = (0, loader_1.loadSql)(loader_1.SQL.COLUMNS);
+        const indexesQuery = (0, loader_1.loadSql)(loader_1.SQL.INDEXES);
+        const constraintsQuery = (0, loader_1.loadSql)(loader_1.SQL.CONSTRAINTS);
         const excludedSchemasStr = excludedSchemas.join(',');
-        const tablesResult = await client.query(TABLES_QUERY, [excludedSchemasStr]);
-        const schemas = [];
-        for (const tableRow of tablesResult.rows) {
+        const tablesResult = await client.query(tablesQuery, [excludedSchemasStr]);
+        const schemaPromises = tablesResult.rows.map(async (tableRow) => {
             const schemaName = tableRow.schema_name;
             const tableName = tableRow.table_name;
             const [columnsResult, indexesResult, constraintsResult] = await Promise.all([
-                client.query(COLUMNS_QUERY, [schemaName, tableName]),
-                client.query(INDEXES_QUERY, [schemaName, tableName]),
-                client.query(CONSTRAINTS_QUERY, [schemaName, tableName]),
+                client.query(columnsQuery, [schemaName, tableName]),
+                client.query(indexesQuery, [schemaName, tableName]),
+                client.query(constraintsQuery, [schemaName, tableName]),
             ]);
             const columns = columnsResult.rows.map((row) => ({
                 columnName: row.column_name,
@@ -36889,15 +37013,15 @@ async function getSchemas(dbUrl, excludedSchemas) {
                 constraintType: row.constraint_type,
                 constraintDef: row.constraint_def,
             }));
-            schemas.push({
+            return {
                 schemaName,
                 tableName,
                 columns,
                 indexes,
                 constraints,
-            });
-        }
-        return schemas;
+            };
+        });
+        return Promise.all(schemaPromises);
     }
     finally {
         await client.end();
@@ -36915,44 +37039,22 @@ async function getSchemas(dbUrl, excludedSchemas) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSqlFunctions = getSqlFunctions;
 const pg_1 = __nccwpck_require__(3273);
-const SQL_FUNCTIONS_QUERY = `
-SELECT
-  n.nspname AS schema_name,
-  p.proname AS function_name,
-  pg_get_function_arguments(p.oid) AS arguments,
-  pg_get_function_result(p.oid) AS return_type,
-  pg_get_functiondef(p.oid) AS definition,
-  l.lanname AS language,
-  p.prosecdef AS security_definer,
-  p.provolatile AS volatility
-FROM pg_proc p
-JOIN pg_namespace n ON p.pronamespace = n.oid
-JOIN pg_language l ON p.prolang = l.oid
-WHERE n.nspname = ANY($1::text[])
-  AND p.prokind = 'f'
-ORDER BY n.nspname, p.proname
-`;
-const TARGET_SCHEMAS_QUERY = `
-SELECT nspname
-FROM pg_namespace
-WHERE nspname NOT LIKE 'pg_%'
-  AND nspname NOT IN ($1)
-  AND nspname != 'information_schema'
-ORDER BY nspname
-`;
+const loader_1 = __nccwpck_require__(5281);
 async function getSqlFunctions(dbUrl, excludedSchemas) {
     const client = new pg_1.Client({ connectionString: dbUrl });
     try {
         await client.connect();
+        const targetSchemasQuery = (0, loader_1.loadSql)(loader_1.SQL.TARGET_SCHEMAS);
         const excludedSchemasStr = excludedSchemas.join(',');
-        const schemasResult = await client.query(TARGET_SCHEMAS_QUERY, [
+        const schemasResult = await client.query(targetSchemasQuery, [
             excludedSchemasStr,
         ]);
         const targetSchemas = schemasResult.rows.map((row) => row.nspname);
         if (targetSchemas.length === 0) {
             return [];
         }
-        const result = await client.query(SQL_FUNCTIONS_QUERY, [targetSchemas]);
+        const sqlFunctionsQuery = (0, loader_1.loadSql)(loader_1.SQL.SQL_FUNCTIONS);
+        const result = await client.query(sqlFunctionsQuery, [targetSchemas]);
         return result.rows.map((row) => ({
             schemaName: row.schema_name,
             functionName: row.function_name,

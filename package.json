@@ -4,7 +4,7 @@
   "description": "GitHub Action to detect differences between Supabase environments (Edge Functions, RLS, SQL Functions, Schemas)",
   "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt && cp src/sql/*.sql dist/",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"

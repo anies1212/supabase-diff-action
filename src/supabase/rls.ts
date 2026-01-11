@@ -1,20 +1,6 @@
 import { Client } from 'pg';
 import { RlsPolicy } from '../types';
-
-const RLS_QUERY = `
-SELECT
-  schemaname AS schema_name,
-  tablename AS table_name,
-  policyname AS policy_name,
-  permissive,
-  roles,
-  cmd,
-  qual,
-  with_check
-FROM pg_policies
-WHERE schemaname NOT IN ($1)
-ORDER BY schemaname, tablename, policyname
-`;
+import { loadSql, SQL } from '../sql/loader';
 
 export async function getRlsPolicies(
   dbUrl: string,
@@ -25,8 +11,9 @@ export async function getRlsPolicies(
   try {
     await client.connect();
 
+    const query = loadSql(SQL.RLS_POLICIES);
     const excludedSchemasStr = excludedSchemas.join(',');
-    const result = await client.query(RLS_QUERY, [excludedSchemasStr]);
+    const result = await client.query(query, [excludedSchemasStr]);
 
     return result.rows.map((row) => ({
       schemaName: row.schema_name,

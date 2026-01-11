@@ -1,32 +1,6 @@
 import { Client } from 'pg';
 import { SqlFunction } from '../types';
-
-const SQL_FUNCTIONS_QUERY = `
-SELECT
-  n.nspname AS schema_name,
-  p.proname AS function_name,
-  pg_get_function_arguments(p.oid) AS arguments,
-  pg_get_function_result(p.oid) AS return_type,
-  pg_get_functiondef(p.oid) AS definition,
-  l.lanname AS language,
-  p.prosecdef AS security_definer,
-  p.provolatile AS volatility
-FROM pg_proc p
-JOIN pg_namespace n ON p.pronamespace = n.oid
-JOIN pg_language l ON p.prolang = l.oid
-WHERE n.nspname = ANY($1::text[])
-  AND p.prokind = 'f'
-ORDER BY n.nspname, p.proname
-`;
-
-const TARGET_SCHEMAS_QUERY = `
-SELECT nspname
-FROM pg_namespace
-WHERE nspname NOT LIKE 'pg_%'
-  AND nspname NOT IN ($1)
-  AND nspname != 'information_schema'
-ORDER BY nspname
-`;
+import { loadSql, SQL } from '../sql/loader';
 
 export async function getSqlFunctions(
   dbUrl: string,
@@ -37,8 +11,9 @@ export async function getSqlFunctions(
   try {
     await client.connect();
 
+    const targetSchemasQuery = loadSql(SQL.TARGET_SCHEMAS);
     const excludedSchemasStr = excludedSchemas.join(',');
-    const schemasResult = await client.query(TARGET_SCHEMAS_QUERY, [
+    const schemasResult = await client.query(targetSchemasQuery, [
       excludedSchemasStr,
     ]);
     const targetSchemas = schemasResult.rows.map((row) => row.nspname);
@@ -47,7 +22,8 @@ export async function getSqlFunctions(
       return [];
     }
 
-    const result = await client.query(SQL_FUNCTIONS_QUERY, [targetSchemas]);
+    const sqlFunctionsQuery = loadSql(SQL.SQL_FUNCTIONS);
+    const result = await client.query(sqlFunctionsQuery, [targetSchemas]);
 
     return result.rows.map((row) => ({
       schemaName: row.schema_name,
