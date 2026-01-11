@@ -1,6 +1,6 @@
 # Supabase Diff Action
 
-[![GitHub release](https://img.shields.io/github/v/release/your-org/supabase-diff-action)](https://github.com/your-org/supabase-diff-action/releases)
+[![GitHub release](https://img.shields.io/github/v/release/anies1212/supabase-diff-action)](https://github.com/anies1212/supabase-diff-action/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)](https://github.com/features/actions)
 
@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: your-org/supabase-diff-action@v1
+      - uses: anies1212/supabase-diff-action@v1
         with:
           supabase_access_token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           dev_project_ref: ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
@@ -98,7 +98,7 @@ jobs:
 ### Using Outputs
 
 ```yaml
-- uses: your-org/supabase-diff-action@v1
+- uses: anies1212/supabase-diff-action@v1
   id: diff
   with:
     # ... inputs
@@ -160,7 +160,7 @@ Differences detected between dev and prod environments.
 ### Run Specific Checks Only
 
 ```yaml
-- uses: your-org/supabase-diff-action@v1
+- uses: anies1212/supabase-diff-action@v1
   with:
     # ... required inputs
     check_edge_functions: 'true'
@@ -172,7 +172,7 @@ Differences detected between dev and prod environments.
 ### Fail CI on Differences
 
 ```yaml
-- uses: your-org/supabase-diff-action@v1
+- uses: anies1212/supabase-diff-action@v1
   with:
     # ... required inputs
     fail_on_diff: 'true'
@@ -181,7 +181,7 @@ Differences detected between dev and prod environments.
 ### Exclude Specific Schemas
 
 ```yaml
-- uses: your-org/supabase-diff-action@v1
+- uses: anies1212/supabase-diff-action@v1
   with:
     # ... required inputs
     excluded_schemas: 'pg_catalog,information_schema,extensions,my_internal_schema'
@@ -198,7 +198,7 @@ Differences detected between dev and prod environments.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/supabase-diff-action.git
+git clone https://github.com/anies1212/supabase-diff-action.git
 cd supabase-diff-action
 
 # Install dependencies
