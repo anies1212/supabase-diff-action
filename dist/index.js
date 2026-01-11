@@ -36629,10 +36629,12 @@ async function checkEdgeFunctionsTask(inputs) {
         };
     }
     catch (error) {
+        const err = toError(error);
+        err.message = formatErrorMessage(error);
         return {
             name: 'Edge Functions',
             diff: null,
-            error: error instanceof Error ? error : new Error(String(error)),
+            error: err,
             devCount: 0,
             prdCount: 0,
         };
@@ -36655,10 +36657,12 @@ async function checkRlsPoliciesTask(inputs) {
         };
     }
     catch (error) {
+        const err = toError(error);
+        err.message = formatErrorMessage(error);
         return {
             name: 'RLS Policies',
             diff: null,
-            error: error instanceof Error ? error : new Error(String(error)),
+            error: err,
             devCount: 0,
             prdCount: 0,
         };
@@ -36681,10 +36685,12 @@ async function checkSqlFunctionsTask(inputs) {
         };
     }
     catch (error) {
+        const err = toError(error);
+        err.message = formatErrorMessage(error);
         return {
             name: 'SQL Functions',
             diff: null,
-            error: error instanceof Error ? error : new Error(String(error)),
+            error: err,
             devCount: 0,
             prdCount: 0,
         };
@@ -36707,10 +36713,12 @@ async function checkSchemasTask(inputs) {
         };
     }
     catch (error) {
+        const err = toError(error);
+        err.message = formatErrorMessage(error);
         return {
             name: 'Schemas',
             diff: null,
-            error: error instanceof Error ? error : new Error(String(error)),
+            error: err,
             devCount: 0,
             prdCount: 0,
         };
@@ -36720,6 +36728,27 @@ function hasDiff(diff) {
     return (diff.onlyInDev.length > 0 ||
         diff.onlyInPrd.length > 0 ||
         diff.different.length > 0);
+}
+function formatErrorMessage(error) {
+    if (error instanceof AggregateError) {
+        const messages = error.errors.map((e) => {
+            if (e instanceof Error) {
+                return e.message;
+            }
+            return String(e);
+        });
+        return `AggregateError: ${messages.join('; ')}`;
+    }
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return String(error);
+}
+function toError(error) {
+    if (error instanceof Error) {
+        return error;
+    }
+    return new Error(formatErrorMessage(error));
 }
 async function run() {
     try {

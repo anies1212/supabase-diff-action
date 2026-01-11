@@ -69,10 +69,12 @@ async function checkEdgeFunctionsTask(
       prdCount: prdFunctions.length,
     };
   } catch (error) {
+    const err = toError(error);
+    err.message = formatErrorMessage(error);
     return {
       name: 'Edge Functions',
       diff: null,
-      error: error instanceof Error ? error : new Error(String(error)),
+      error: err,
       devCount: 0,
       prdCount: 0,
     };
@@ -98,10 +100,12 @@ async function checkRlsPoliciesTask(
       prdCount: prdPolicies.length,
     };
   } catch (error) {
+    const err = toError(error);
+    err.message = formatErrorMessage(error);
     return {
       name: 'RLS Policies',
       diff: null,
-      error: error instanceof Error ? error : new Error(String(error)),
+      error: err,
       devCount: 0,
       prdCount: 0,
     };
@@ -127,10 +131,12 @@ async function checkSqlFunctionsTask(
       prdCount: prdFunctions.length,
     };
   } catch (error) {
+    const err = toError(error);
+    err.message = formatErrorMessage(error);
     return {
       name: 'SQL Functions',
       diff: null,
-      error: error instanceof Error ? error : new Error(String(error)),
+      error: err,
       devCount: 0,
       prdCount: 0,
     };
@@ -156,10 +162,12 @@ async function checkSchemasTask(
       prdCount: prdSchemas.length,
     };
   } catch (error) {
+    const err = toError(error);
+    err.message = formatErrorMessage(error);
     return {
       name: 'Schemas',
       diff: null,
-      error: error instanceof Error ? error : new Error(String(error)),
+      error: err,
       devCount: 0,
       prdCount: 0,
     };
@@ -172,6 +180,29 @@ function hasDiff<T>(diff: DiffResult<T>): boolean {
     diff.onlyInPrd.length > 0 ||
     diff.different.length > 0
   );
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (error instanceof AggregateError) {
+    const messages = error.errors.map((e: unknown) => {
+      if (e instanceof Error) {
+        return e.message;
+      }
+      return String(e);
+    });
+    return `AggregateError: ${messages.join('; ')}`;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(formatErrorMessage(error));
 }
 
 async function run(): Promise<void> {
