@@ -1,0 +1,69 @@
+name: 'Supabase Diff Action'
+description: 'Detect differences between Supabase environments (Edge Functions, RLS, SQL Functions, Schemas)'
+author: ''
+
+branding:
+  icon: 'git-pull-request'
+  color: 'green'
+
+inputs:
+  supabase_access_token:
+    description: 'Supabase Management API access token'
+    required: true
+  dev_project_ref:
+    description: 'Supabase project reference for dev environment'
+    required: true
+  dev_db_url:
+    description: 'PostgreSQL connection URL for dev environment'
+    required: true
+  prd_project_ref:
+    description: 'Supabase project reference for production environment'
+    required: true
+  prd_db_url:
+    description: 'PostgreSQL connection URL for production environment'
+    required: true
+  github_token:
+    description: 'GitHub token for commenting on PRs'
+    required: true
+  check_edge_functions:
+    description: 'Check Edge Functions differences'
+    required: false
+    default: 'true'
+  check_rls_policies:
+    description: 'Check RLS Policies differences'
+    required: false
+    default: 'true'
+  check_sql_functions:
+    description: 'Check SQL Functions differences'
+    required: false
+    default: 'true'
+  check_schemas:
+    description: 'Check Schemas (table structures) differences'
+    required: false
+    default: 'true'
+  fail_on_diff:
+    description: 'Fail the action if differences are found'
+    required: false
+    default: 'false'
+  excluded_schemas:
+    description: 'Comma-separated list of schemas to exclude (default: pg_catalog,information_schema,extensions,pg_toast,pgsodium,vault,graphql,graphql_public)'
+    required: false
+    default: 'pg_catalog,information_schema,extensions,pg_toast,pgsodium,vault,graphql,graphql_public'
+
+outputs:
+  has_diff:
+    description: 'Whether differences were found (true/false)'
+  diff_summary:
+    description: 'JSON summary of all differences found'
+  edge_functions_diff:
+    description: 'Edge Functions differences (JSON)'
+  rls_policies_diff:
+    description: 'RLS Policies differences (JSON)'
+  sql_functions_diff:
+    description: 'SQL Functions differences (JSON)'
+  schemas_diff:
+    description: 'Schemas differences (JSON)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
