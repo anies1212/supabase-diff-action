@@ -64,6 +64,8 @@ export interface ActionInputs {
     supabaseAccessToken: string;
     devProjectRef: string;
     devDbUrl: string;
+    stgProjectRef?: string;
+    stgDbUrl?: string;
     prdProjectRef: string;
     prdDbUrl: string;
     githubToken: string;
@@ -74,10 +76,16 @@ export interface ActionInputs {
     failOnDiff: boolean;
     excludedSchemas: string[];
 }
+export type EnvironmentPair = 'dev-stg' | 'stg-prd' | 'dev-prd';
+export interface PairwiseDiffResult<T> {
+    pair: EnvironmentPair;
+    result: DiffResult<T>;
+}
 export interface DiffSummary {
     hasDiff: boolean;
-    edgeFunctions?: DiffResult<EdgeFunction>;
-    rlsPolicies?: DiffResult<RlsPolicy>;
-    sqlFunctions?: DiffResult<SqlFunction>;
-    schemas?: DiffResult<TableSchema>;
+    hasStg: boolean;
+    edgeFunctions?: PairwiseDiffResult<EdgeFunction>[];
+    rlsPolicies?: PairwiseDiffResult<RlsPolicy>[];
+    sqlFunctions?: PairwiseDiffResult<SqlFunction>[];
+    schemas?: PairwiseDiffResult<TableSchema>[];
 }
