@@ -1,12 +1,12 @@
-import { Client } from 'pg';
 import { RlsPolicy } from '../types';
 import { loadSql, SQL } from '../sql/loader';
+import { createClient } from './db';
 
 export async function getRlsPolicies(
   dbUrl: string,
   excludedSchemas: string[]
 ): Promise<RlsPolicy[]> {
-  const client = new Client({ connectionString: dbUrl });
+  const client = createClient(dbUrl);
 
   try {
     await client.connect();

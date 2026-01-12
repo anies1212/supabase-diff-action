@@ -1,12 +1,12 @@
-import { Client } from 'pg';
 import { SqlFunction } from '../types';
 import { loadSql, SQL } from '../sql/loader';
+import { createClient } from './db';
 
 export async function getSqlFunctions(
   dbUrl: string,
   excludedSchemas: string[]
 ): Promise<SqlFunction[]> {
-  const client = new Client({ connectionString: dbUrl });
+  const client = createClient(dbUrl);
 
   try {
     await client.connect();

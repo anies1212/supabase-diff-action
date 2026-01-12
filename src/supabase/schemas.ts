@@ -1,12 +1,12 @@
-import { Client } from 'pg';
 import { TableSchema, TableColumn, TableIndex, TableConstraint } from '../types';
 import { loadSql, SQL } from '../sql/loader';
+import { createClient } from './db';
 
 export async function getSchemas(
   dbUrl: string,
   excludedSchemas: string[]
 ): Promise<TableSchema[]> {
-  const client = new Client({ connectionString: dbUrl });
+  const client = createClient(dbUrl);
 
   try {
     await client.connect();

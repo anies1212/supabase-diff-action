@@ -36930,6 +36930,60 @@ exports.SQL = {
 
 /***/ }),
 
+/***/ 2346:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createClient = createClient;
+const pg_1 = __nccwpck_require__(3273);
+const dns = __importStar(__nccwpck_require__(2250));
+// Force IPv4 resolution for DNS lookups
+dns.setDefaultResultOrder('ipv4first');
+function createClient(connectionString) {
+    const config = {
+        connectionString,
+    };
+    return new pg_1.Client(config);
+}
+
+
+/***/ }),
+
 /***/ 9127:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -36971,10 +37025,10 @@ async function getEdgeFunctions(projectRef, accessToken) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getRlsPolicies = getRlsPolicies;
-const pg_1 = __nccwpck_require__(3273);
 const loader_1 = __nccwpck_require__(5281);
+const db_1 = __nccwpck_require__(2346);
 async function getRlsPolicies(dbUrl, excludedSchemas) {
-    const client = new pg_1.Client({ connectionString: dbUrl });
+    const client = (0, db_1.createClient)(dbUrl);
     try {
         await client.connect();
         const query = (0, loader_1.loadSql)(loader_1.SQL.RLS_POLICIES);
@@ -37006,10 +37060,10 @@ async function getRlsPolicies(dbUrl, excludedSchemas) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSchemas = getSchemas;
-const pg_1 = __nccwpck_require__(3273);
 const loader_1 = __nccwpck_require__(5281);
+const db_1 = __nccwpck_require__(2346);
 async function getSchemas(dbUrl, excludedSchemas) {
-    const client = new pg_1.Client({ connectionString: dbUrl });
+    const client = (0, db_1.createClient)(dbUrl);
     try {
         await client.connect();
         const tablesQuery = (0, loader_1.loadSql)(loader_1.SQL.TABLES);
@@ -37067,10 +37121,10 @@ async function getSchemas(dbUrl, excludedSchemas) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSqlFunctions = getSqlFunctions;
-const pg_1 = __nccwpck_require__(3273);
 const loader_1 = __nccwpck_require__(5281);
+const db_1 = __nccwpck_require__(2346);
 async function getSqlFunctions(dbUrl, excludedSchemas) {
-    const client = new pg_1.Client({ connectionString: dbUrl });
+    const client = (0, db_1.createClient)(dbUrl);
     try {
         await client.connect();
         const targetSchemasQuery = (0, loader_1.loadSql)(loader_1.SQL.TARGET_SCHEMAS);
