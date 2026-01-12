@@ -36467,7 +36467,7 @@ function buildEdgeFunctionsSection(diff) {
         lines.push('');
     }
     if (diff.onlyInPrd.length > 0) {
-        lines.push(`#### 🗑️ Missing from Dev (${diff.onlyInPrd.length})`);
+        lines.push(`#### 🗑️ Only in Prd (${diff.onlyInPrd.length})`);
         lines.push('');
         lines.push('| Function | Version | Status |');
         lines.push('|----------|---------|--------|');
@@ -36506,7 +36506,7 @@ function buildRlsPoliciesSection(diff) {
         lines.push('');
     }
     if (diff.onlyInPrd.length > 0) {
-        lines.push(`#### 🗑️ Missing from Dev (${diff.onlyInPrd.length})`);
+        lines.push(`#### 🗑️ Only in Prd (${diff.onlyInPrd.length})`);
         lines.push('');
         lines.push('| Table | Policy | Command | Roles |');
         lines.push('|-------|--------|---------|-------|');
@@ -36546,7 +36546,7 @@ function buildSqlFunctionsSection(diff) {
         lines.push('');
     }
     if (diff.onlyInPrd.length > 0) {
-        lines.push(`#### 🗑️ Missing from Dev (${diff.onlyInPrd.length})`);
+        lines.push(`#### 🗑️ Only in Prd (${diff.onlyInPrd.length})`);
         lines.push('');
         lines.push('| Schema | Function | Return Type | Language |');
         lines.push('|--------|----------|-------------|----------|');
@@ -36587,7 +36587,7 @@ function buildSchemasSection(diff) {
         lines.push('');
     }
     if (diff.onlyInPrd.length > 0) {
-        lines.push(`#### 🗑️ Missing from Dev (${diff.onlyInPrd.length})`);
+        lines.push(`#### 🗑️ Only in Prd (${diff.onlyInPrd.length})`);
         lines.push('');
         lines.push('| Schema | Table | Columns |');
         lines.push('|--------|-------|---------|');
