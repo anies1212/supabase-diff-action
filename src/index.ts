@@ -14,6 +14,8 @@ import {
   ActionInputs,
   DiffSummary,
   DiffResult,
+  PairwiseDiffResult,
+  EnvironmentPair,
   EdgeFunction,
   RlsPolicy,
   SqlFunction,
@@ -21,12 +23,17 @@ import {
 } from './types';
 
 function getInputs(): ActionInputs {
+  const stgProjectRef = core.getInput('stg_project_ref') || undefined;
+  const stgDbUrl = core.getInput('stg_db_url') || undefined;
+
   return {
     supabaseAccessToken: core.getInput('supabase_access_token', {
       required: true,
     }),
     devProjectRef: core.getInput('dev_project_ref', { required: true }),
     devDbUrl: core.getInput('dev_db_url', { required: true }),
+    stgProjectRef,
+    stgDbUrl,
     prdProjectRef: core.getInput('prd_project_ref', { required: true }),
     prdDbUrl: core.getInput('prd_db_url', { required: true }),
     githubToken: core.getInput('github_token', { required: true }),
@@ -42,12 +49,15 @@ function getInputs(): ActionInputs {
   };
 }
 
+function hasStgEnvironment(inputs: ActionInputs): boolean {
+  return !!(inputs.stgProjectRef && inputs.stgDbUrl);
+}
+
 interface CheckResult<T> {
   name: string;
-  diff: DiffResult<T> | null;
+  diffs: PairwiseDiffResult<T>[] | null;
   error: Error | null;
-  devCount: number;
-  prdCount: number;
+  counts: { env: string; count: number }[];
 }
 
 async function checkEdgeFunctionsTask(
@@ -55,29 +65,53 @@ async function checkEdgeFunctionsTask(
 ): Promise<CheckResult<EdgeFunction>> {
   try {
     core.info('Fetching Edge Functions...');
-    const [devFunctions, prdFunctions] = await Promise.all([
+    const hasStg = hasStgEnvironment(inputs);
+
+    const fetchPromises: Promise<EdgeFunction[]>[] = [
       getEdgeFunctions(inputs.devProjectRef, inputs.supabaseAccessToken),
       getEdgeFunctions(inputs.prdProjectRef, inputs.supabaseAccessToken),
-    ]);
+    ];
+    if (hasStg) {
+      fetchPromises.splice(
+        1,
+        0,
+        getEdgeFunctions(inputs.stgProjectRef!, inputs.supabaseAccessToken)
+      );
+    }
 
-    const diff = compareEdgeFunctions(devFunctions, prdFunctions);
-    return {
-      name: 'Edge Functions',
-      diff,
-      error: null,
-      devCount: devFunctions.length,
-      prdCount: prdFunctions.length,
-    };
+    const results = await Promise.all(fetchPromises);
+    const devFunctions = results[0];
+    const stgFunctions = hasStg ? results[1] : null;
+    const prdFunctions = hasStg ? results[2] : results[1];
+
+    const diffs: PairwiseDiffResult<EdgeFunction>[] = [];
+    const counts: { env: string; count: number }[] = [
+      { env: 'dev', count: devFunctions.length },
+    ];
+
+    if (hasStg && stgFunctions) {
+      counts.push({ env: 'stg', count: stgFunctions.length });
+      diffs.push({
+        pair: 'dev-stg',
+        result: compareEdgeFunctions(devFunctions, stgFunctions),
+      });
+      diffs.push({
+        pair: 'stg-prd',
+        result: compareEdgeFunctions(stgFunctions, prdFunctions),
+      });
+    } else {
+      diffs.push({
+        pair: 'dev-prd',
+        result: compareEdgeFunctions(devFunctions, prdFunctions),
+      });
+    }
+    counts.push({ env: 'prd', count: prdFunctions.length });
+
+    return { name: 'Edge Functions', diffs, error: null, counts };
   } catch (error) {
     const err = toError(error);
     err.message = formatErrorMessage(error);
-    return {
-      name: 'Edge Functions',
-      diff: null,
-      error: err,
-      devCount: 0,
-      prdCount: 0,
-    };
+    return { name: 'Edge Functions', diffs: null, error: err, counts: [] };
   }
 }
 
@@ -86,29 +120,53 @@ async function checkRlsPoliciesTask(
 ): Promise<CheckResult<RlsPolicy>> {
   try {
     core.info('Fetching RLS Policies...');
-    const [devPolicies, prdPolicies] = await Promise.all([
+    const hasStg = hasStgEnvironment(inputs);
+
+    const fetchPromises: Promise<RlsPolicy[]>[] = [
       getRlsPolicies(inputs.devDbUrl, inputs.excludedSchemas),
       getRlsPolicies(inputs.prdDbUrl, inputs.excludedSchemas),
-    ]);
+    ];
+    if (hasStg) {
+      fetchPromises.splice(
+        1,
+        0,
+        getRlsPolicies(inputs.stgDbUrl!, inputs.excludedSchemas)
+      );
+    }
 
-    const diff = compareRlsPolicies(devPolicies, prdPolicies);
-    return {
-      name: 'RLS Policies',
-      diff,
-      error: null,
-      devCount: devPolicies.length,
-      prdCount: prdPolicies.length,
-    };
+    const results = await Promise.all(fetchPromises);
+    const devPolicies = results[0];
+    const stgPolicies = hasStg ? results[1] : null;
+    const prdPolicies = hasStg ? results[2] : results[1];
+
+    const diffs: PairwiseDiffResult<RlsPolicy>[] = [];
+    const counts: { env: string; count: number }[] = [
+      { env: 'dev', count: devPolicies.length },
+    ];
+
+    if (hasStg && stgPolicies) {
+      counts.push({ env: 'stg', count: stgPolicies.length });
+      diffs.push({
+        pair: 'dev-stg',
+        result: compareRlsPolicies(devPolicies, stgPolicies),
+      });
+      diffs.push({
+        pair: 'stg-prd',
+        result: compareRlsPolicies(stgPolicies, prdPolicies),
+      });
+    } else {
+      diffs.push({
+        pair: 'dev-prd',
+        result: compareRlsPolicies(devPolicies, prdPolicies),
+      });
+    }
+    counts.push({ env: 'prd', count: prdPolicies.length });
+
+    return { name: 'RLS Policies', diffs, error: null, counts };
   } catch (error) {
     const err = toError(error);
     err.message = formatErrorMessage(error);
-    return {
-      name: 'RLS Policies',
-      diff: null,
-      error: err,
-      devCount: 0,
-      prdCount: 0,
-    };
+    return { name: 'RLS Policies', diffs: null, error: err, counts: [] };
   }
 }
 
@@ -117,29 +175,53 @@ async function checkSqlFunctionsTask(
 ): Promise<CheckResult<SqlFunction>> {
   try {
     core.info('Fetching SQL Functions...');
-    const [devFunctions, prdFunctions] = await Promise.all([
+    const hasStg = hasStgEnvironment(inputs);
+
+    const fetchPromises: Promise<SqlFunction[]>[] = [
       getSqlFunctions(inputs.devDbUrl, inputs.excludedSchemas),
       getSqlFunctions(inputs.prdDbUrl, inputs.excludedSchemas),
-    ]);
+    ];
+    if (hasStg) {
+      fetchPromises.splice(
+        1,
+        0,
+        getSqlFunctions(inputs.stgDbUrl!, inputs.excludedSchemas)
+      );
+    }
 
-    const diff = compareSqlFunctions(devFunctions, prdFunctions);
-    return {
-      name: 'SQL Functions',
-      diff,
-      error: null,
-      devCount: devFunctions.length,
-      prdCount: prdFunctions.length,
-    };
+    const results = await Promise.all(fetchPromises);
+    const devFunctions = results[0];
+    const stgFunctions = hasStg ? results[1] : null;
+    const prdFunctions = hasStg ? results[2] : results[1];
+
+    const diffs: PairwiseDiffResult<SqlFunction>[] = [];
+    const counts: { env: string; count: number }[] = [
+      { env: 'dev', count: devFunctions.length },
+    ];
+
+    if (hasStg && stgFunctions) {
+      counts.push({ env: 'stg', count: stgFunctions.length });
+      diffs.push({
+        pair: 'dev-stg',
+        result: compareSqlFunctions(devFunctions, stgFunctions),
+      });
+      diffs.push({
+        pair: 'stg-prd',
+        result: compareSqlFunctions(stgFunctions, prdFunctions),
+      });
+    } else {
+      diffs.push({
+        pair: 'dev-prd',
+        result: compareSqlFunctions(devFunctions, prdFunctions),
+      });
+    }
+    counts.push({ env: 'prd', count: prdFunctions.length });
+
+    return { name: 'SQL Functions', diffs, error: null, counts };
   } catch (error) {
     const err = toError(error);
     err.message = formatErrorMessage(error);
-    return {
-      name: 'SQL Functions',
-      diff: null,
-      error: err,
-      devCount: 0,
-      prdCount: 0,
-    };
+    return { name: 'SQL Functions', diffs: null, error: err, counts: [] };
   }
 }
 
@@ -148,38 +230,66 @@ async function checkSchemasTask(
 ): Promise<CheckResult<TableSchema>> {
   try {
     core.info('Fetching Schemas...');
-    const [devSchemas, prdSchemas] = await Promise.all([
+    const hasStg = hasStgEnvironment(inputs);
+
+    const fetchPromises: Promise<TableSchema[]>[] = [
       getSchemas(inputs.devDbUrl, inputs.excludedSchemas),
       getSchemas(inputs.prdDbUrl, inputs.excludedSchemas),
-    ]);
+    ];
+    if (hasStg) {
+      fetchPromises.splice(
+        1,
+        0,
+        getSchemas(inputs.stgDbUrl!, inputs.excludedSchemas)
+      );
+    }
 
-    const diff = compareSchemas(devSchemas, prdSchemas);
-    return {
-      name: 'Schemas',
-      diff,
-      error: null,
-      devCount: devSchemas.length,
-      prdCount: prdSchemas.length,
-    };
+    const results = await Promise.all(fetchPromises);
+    const devSchemas = results[0];
+    const stgSchemas = hasStg ? results[1] : null;
+    const prdSchemas = hasStg ? results[2] : results[1];
+
+    const diffs: PairwiseDiffResult<TableSchema>[] = [];
+    const counts: { env: string; count: number }[] = [
+      { env: 'dev', count: devSchemas.length },
+    ];
+
+    if (hasStg && stgSchemas) {
+      counts.push({ env: 'stg', count: stgSchemas.length });
+      diffs.push({
+        pair: 'dev-stg',
+        result: compareSchemas(devSchemas, stgSchemas),
+      });
+      diffs.push({
+        pair: 'stg-prd',
+        result: compareSchemas(stgSchemas, prdSchemas),
+      });
+    } else {
+      diffs.push({
+        pair: 'dev-prd',
+        result: compareSchemas(devSchemas, prdSchemas),
+      });
+    }
+    counts.push({ env: 'prd', count: prdSchemas.length });
+
+    return { name: 'Schemas', diffs, error: null, counts };
   } catch (error) {
     const err = toError(error);
     err.message = formatErrorMessage(error);
-    return {
-      name: 'Schemas',
-      diff: null,
-      error: err,
-      devCount: 0,
-      prdCount: 0,
-    };
+    return { name: 'Schemas', diffs: null, error: err, counts: [] };
   }
 }
 
-function hasDiff<T>(diff: DiffResult<T>): boolean {
+function hasDiffInResult<T>(diff: DiffResult<T>): boolean {
   return (
     diff.onlyInDev.length > 0 ||
     diff.onlyInPrd.length > 0 ||
     diff.different.length > 0
   );
+}
+
+function hasDiffInPairwise<T>(diffs: PairwiseDiffResult<T>[]): boolean {
+  return diffs.some((d) => hasDiffInResult(d.result));
 }
 
 function formatErrorMessage(error: unknown): string {
@@ -208,10 +318,16 @@ function toError(error: unknown): Error {
 async function run(): Promise<void> {
   try {
     const inputs = getInputs();
-    const summary: DiffSummary = { hasDiff: false };
+    const hasStg = hasStgEnvironment(inputs);
+    const summary: DiffSummary = { hasDiff: false, hasStg };
     const errors: { name: string; error: Error }[] = [];
 
     core.info('Starting Supabase environment diff check...');
+    if (hasStg) {
+      core.info('Staging environment detected. Comparing dev -> stg -> prd');
+    } else {
+      core.info('Comparing dev -> prd (no staging environment)');
+    }
     core.info('Running all checks in parallel...');
 
     // Run all checks in parallel
@@ -240,10 +356,13 @@ async function run(): Promise<void> {
         core.error(`Error in ${result.name}: ${result.error.message}`);
         core.error(`Stack trace: ${result.error.stack}`);
         errors.push({ name: result.name, error: result.error });
-      } else if (result.diff) {
-        core.info(`dev: ${result.devCount}, prod: ${result.prdCount}`);
+      } else if (result.diffs) {
+        const countsStr = result.counts
+          .map((c) => `${c.env}: ${c.count}`)
+          .join(', ');
+        core.info(`Counts: ${countsStr}`);
 
-        if (hasDiff(result.diff)) {
+        if (hasDiffInPairwise(result.diffs as PairwiseDiffResult<unknown>[])) {
           summary.hasDiff = true;
           core.warning(`Differences found in ${result.name}`);
         }
@@ -251,20 +370,26 @@ async function run(): Promise<void> {
         // Set outputs and summary based on result name
         switch (result.name) {
           case 'Edge Functions':
-            summary.edgeFunctions = result.diff as DiffResult<EdgeFunction>;
-            core.setOutput('edge_functions_diff', JSON.stringify(result.diff));
+            summary.edgeFunctions =
+              result.diffs as PairwiseDiffResult<EdgeFunction>[];
+            core.setOutput(
+              'edge_functions_diff',
+              JSON.stringify(result.diffs)
+            );
             break;
           case 'RLS Policies':
-            summary.rlsPolicies = result.diff as DiffResult<RlsPolicy>;
-            core.setOutput('rls_policies_diff', JSON.stringify(result.diff));
+            summary.rlsPolicies =
+              result.diffs as PairwiseDiffResult<RlsPolicy>[];
+            core.setOutput('rls_policies_diff', JSON.stringify(result.diffs));
             break;
           case 'SQL Functions':
-            summary.sqlFunctions = result.diff as DiffResult<SqlFunction>;
-            core.setOutput('sql_functions_diff', JSON.stringify(result.diff));
+            summary.sqlFunctions =
+              result.diffs as PairwiseDiffResult<SqlFunction>[];
+            core.setOutput('sql_functions_diff', JSON.stringify(result.diffs));
             break;
           case 'Schemas':
-            summary.schemas = result.diff as DiffResult<TableSchema>;
-            core.setOutput('schemas_diff', JSON.stringify(result.diff));
+            summary.schemas = result.diffs as PairwiseDiffResult<TableSchema>[];
+            core.setOutput('schemas_diff', JSON.stringify(result.diffs));
             break;
         }
       }
@@ -291,7 +416,8 @@ async function run(): Promise<void> {
         await postPrComment(inputs.githubToken, summary);
         core.info('Posted PR comment');
       } catch (error) {
-        const commentError = error instanceof Error ? error : new Error(String(error));
+        const commentError =
+          error instanceof Error ? error : new Error(String(error));
         core.error(`Failed to post PR comment: ${commentError.message}`);
         core.error(`Stack trace: ${commentError.stack}`);
       }
@@ -302,7 +428,9 @@ async function run(): Promise<void> {
       core.warning('Differences detected between environments');
 
       if (inputs.failOnDiff) {
-        core.setFailed('Differences detected between environments (fail_on_diff=true)');
+        core.setFailed(
+          'Differences detected between environments (fail_on_diff=true)'
+        );
       }
     } else if (errors.length === 0) {
       core.info('No differences between environments');
@@ -310,7 +438,9 @@ async function run(): Promise<void> {
 
     // Fail if there were any errors
     if (errors.length > 0) {
-      const errorMessages = errors.map((e) => `${e.name}: ${e.error.message}`).join('; ');
+      const errorMessages = errors
+        .map((e) => `${e.name}: ${e.error.message}`)
+        .join('; ');
       core.setFailed(`Errors occurred during checks: ${errorMessages}`);
     }
   } catch (error) {

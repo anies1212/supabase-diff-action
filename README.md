@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)](https://github.com/features/actions)
 
-A GitHub Action that detects differences between Supabase environments (e.g., dev/prod) and reports them as Pull Request comments.
+A GitHub Action that detects differences between Supabase environments and reports them as Pull Request comments.
+
+Supports **2-environment** (dev/prd) or **3-environment** (dev/stg/prd) comparison.
 
 Catch deployment discrepancies and environment inconsistencies early to maintain production stability.
 
@@ -14,6 +16,7 @@ Catch deployment discrepancies and environment inconsistencies early to maintain
 - **RLS Policies** - Detect Row Level Security policy definition differences
 - **SQL Functions** - Detect PostgreSQL function definition differences
 - **Schemas** - Detect table structure differences (columns, indexes, constraints)
+- **Multi-environment support** - Compare dev→prd or dev→stg→prd
 - Post readable Markdown-formatted comments to Pull Requests
 - Option to fail CI when differences are detected
 
@@ -42,8 +45,12 @@ In your repository's Settings > Secrets and variables > Actions, add:
 | `SUPABASE_ACCESS_TOKEN` | Management API token | [Supabase Dashboard](https://supabase.com/dashboard/account/tokens) |
 | `SUPABASE_DEV_PROJECT_REF` | Dev environment project ref | Project Settings > General |
 | `SUPABASE_DEV_DB_URL` | Dev environment DB connection URL | See [Database URL Format](#database-url-format) below |
+| `SUPABASE_STG_PROJECT_REF` | Staging environment project ref (optional) | Project Settings > General |
+| `SUPABASE_STG_DB_URL` | Staging environment DB connection URL (optional) | See [Database URL Format](#database-url-format) below |
 | `SUPABASE_PRD_PROJECT_REF` | Prod environment project ref | Project Settings > General |
 | `SUPABASE_PRD_DB_URL` | Prod environment DB connection URL | See [Database URL Format](#database-url-format) below |
+
+> **Note:** If you provide both `stg_project_ref` and `stg_db_url`, the action will compare dev→stg and stg→prd. Otherwise, it compares dev→prd directly.
 
 ### Database URL Format
 
@@ -122,6 +129,8 @@ jobs:
 
 | Input | Default | Description |
 |-------|---------|-------------|
+| `stg_project_ref` | - | Staging environment project reference |
+| `stg_db_url` | - | Staging environment PostgreSQL connection URL |
 | `check_edge_functions` | `true` | Check Edge Functions |
 | `check_rls_policies` | `true` | Check RLS Policies |
 | `check_sql_functions` | `true` | Check SQL Functions |
@@ -203,6 +212,25 @@ Differences detected between dev and prod environments.
 ---
 
 ## Advanced Usage
+
+### 3-Environment Comparison (dev → stg → prd)
+
+```yaml
+- uses: anies1212/supabase-diff-action@v1
+  with:
+    supabase_access_token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    dev_project_ref: ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
+    dev_db_url: ${{ secrets.SUPABASE_DEV_DB_URL }}
+    stg_project_ref: ${{ secrets.SUPABASE_STG_PROJECT_REF }}
+    stg_db_url: ${{ secrets.SUPABASE_STG_DB_URL }}
+    prd_project_ref: ${{ secrets.SUPABASE_PRD_PROJECT_REF }}
+    prd_db_url: ${{ secrets.SUPABASE_PRD_DB_URL }}
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+When staging environment is configured, the action compares:
+- **Dev → Stg**: Detect items only in dev, only in stg, or different between dev and stg
+- **Stg → Prd**: Detect items only in stg, only in prd, or different between stg and prd
 
 ### Run Specific Checks Only
 

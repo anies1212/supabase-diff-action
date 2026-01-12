@@ -16,6 +16,12 @@ inputs:
   dev_db_url:
     description: 'PostgreSQL connection URL for dev environment'
     required: true
+  stg_project_ref:
+    description: 'Supabase project reference for staging environment (optional)'
+    required: false
+  stg_db_url:
+    description: 'PostgreSQL connection URL for staging environment (optional)'
+    required: false
   prd_project_ref:
     description: 'Supabase project reference for production environment'
     required: true
