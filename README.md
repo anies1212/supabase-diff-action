@@ -33,35 +33,36 @@ In your repository's Settings > Secrets and variables > Actions, add:
 
 ### Database URL Format
 
-> **⚠️ Important:** You must use the **Transaction Pooler** connection URL. The legacy `db.[project-ref].supabase.co` format is deprecated and will not work.
+> **⚠️ Important:** You must use the **Session Pooler** connection URL. The legacy `db.[project-ref].supabase.co` format is deprecated and will not work.
 
 **How to get the correct URL:**
 
 1. Go to your Supabase project dashboard
 2. Click the **"Connect"** button (green button in the top right)
-3. Select **"Transaction Pooler"** (port 6543)
+3. Select **"Session Pooler"** (port 5432)
 4. Copy the connection string
 
 **Correct format:**
 ```
-postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
+postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
 ```
 
 **Example:**
 ```
-postgresql://postgres.abcdefghijklmnop:your-password@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
+postgresql://postgres.abcdefghijklmnop:your-password@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
 ```
 
-**Why Transaction Pooler?**
+**Why Session Pooler?**
 - GitHub Actions runners only support **IPv4** connections
-- The Transaction Pooler endpoint has IPv4 addresses, while the legacy direct connection (`db.[ref].supabase.co`) may not resolve
-- Transaction Pooler is optimized for short-lived connections like CI/CD pipelines
+- Session Pooler is **IPv4 compatible**, while Transaction Pooler requires an IPv4 add-on
+- Session Pooler supports PREPARE statements (required by some PostgreSQL clients)
+- The legacy direct connection (`db.[ref].supabase.co`) may not resolve
 
-| Connection Type | Port | GitHub Actions | Use Case |
-|-----------------|------|----------------|----------|
-| Transaction Pooler | 6543 | ✅ Recommended | Short-lived connections |
-| Session Pooler | 5432 | ✅ Works | Longer connections |
-| Direct Connection | 5432 | ❌ May not work | Local development only |
+| Connection Type | Port | IPv4 | PREPARE | Recommendation |
+|-----------------|------|------|---------|----------------|
+| Session Pooler | 5432 | ✅ Compatible | ✅ Supported | ✅ **Recommended** |
+| Transaction Pooler | 6543 | ❌ Requires add-on | ❌ Not supported | Not recommended |
+| Direct Connection | 5432 | ❌ May not resolve | ✅ Supported | Local development only |
 
 ### 2. Create Workflow File
 
