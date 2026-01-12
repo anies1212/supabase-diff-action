@@ -36969,22 +36969,29 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createClient = createClient;
+exports.createClientWithIPv4 = createClientWithIPv4;
 const pg_1 = __nccwpck_require__(3273);
-const net = __importStar(__nccwpck_require__(9278));
-// Patch net.connect to force IPv4
-const originalConnect = net.connect.bind(net);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-net.connect = function (...args) {
-    const options = args[0];
-    if (typeof options === 'object' && options !== null && 'host' in options) {
-        options.family = 4;
+const dns = __importStar(__nccwpck_require__(2250));
+const util_1 = __nccwpck_require__(9023);
+const lookup = (0, util_1.promisify)(dns.lookup);
+async function resolveToIPv4(hostname) {
+    try {
+        const result = await lookup(hostname, { family: 4 });
+        return result.address;
     }
-    return originalConnect(...args);
-};
-function createClient(connectionString) {
+    catch {
+        return hostname;
+    }
+}
+async function createClientWithIPv4(connectionString) {
+    const url = new URL(connectionString);
+    const ipv4Address = await resolveToIPv4(url.hostname);
     return new pg_1.Client({
-        connectionString,
+        user: url.username,
+        password: decodeURIComponent(url.password),
+        host: ipv4Address,
+        port: parseInt(url.port) || 5432,
+        database: url.pathname.slice(1),
         ssl: { rejectUnauthorized: false },
     });
 }
@@ -37036,7 +37043,7 @@ exports.getRlsPolicies = getRlsPolicies;
 const loader_1 = __nccwpck_require__(5281);
 const db_1 = __nccwpck_require__(2346);
 async function getRlsPolicies(dbUrl, excludedSchemas) {
-    const client = (0, db_1.createClient)(dbUrl);
+    const client = await (0, db_1.createClientWithIPv4)(dbUrl);
     try {
         await client.connect();
         const query = (0, loader_1.loadSql)(loader_1.SQL.RLS_POLICIES);
@@ -37071,7 +37078,7 @@ exports.getSchemas = getSchemas;
 const loader_1 = __nccwpck_require__(5281);
 const db_1 = __nccwpck_require__(2346);
 async function getSchemas(dbUrl, excludedSchemas) {
-    const client = (0, db_1.createClient)(dbUrl);
+    const client = await (0, db_1.createClientWithIPv4)(dbUrl);
     try {
         await client.connect();
         const tablesQuery = (0, loader_1.loadSql)(loader_1.SQL.TABLES);
@@ -37132,7 +37139,7 @@ exports.getSqlFunctions = getSqlFunctions;
 const loader_1 = __nccwpck_require__(5281);
 const db_1 = __nccwpck_require__(2346);
 async function getSqlFunctions(dbUrl, excludedSchemas) {
-    const client = (0, db_1.createClient)(dbUrl);
+    const client = await (0, db_1.createClientWithIPv4)(dbUrl);
     try {
         await client.connect();
         const targetSchemasQuery = (0, loader_1.loadSql)(loader_1.SQL.TARGET_SCHEMAS);

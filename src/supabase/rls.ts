@@ -1,12 +1,12 @@
 import { RlsPolicy } from '../types';
 import { loadSql, SQL } from '../sql/loader';
-import { createClient } from './db';
+import { createClientWithIPv4 } from './db';
 
 export async function getRlsPolicies(
   dbUrl: string,
   excludedSchemas: string[]
 ): Promise<RlsPolicy[]> {
-  const client = createClient(dbUrl);
+  const client = await createClientWithIPv4(dbUrl);
 
   try {
     await client.connect();

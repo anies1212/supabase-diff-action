@@ -1,12 +1,12 @@
 import { TableSchema, TableColumn, TableIndex, TableConstraint } from '../types';
 import { loadSql, SQL } from '../sql/loader';
-import { createClient } from './db';
+import { createClientWithIPv4 } from './db';
 
 export async function getSchemas(
   dbUrl: string,
   excludedSchemas: string[]
 ): Promise<TableSchema[]> {
-  const client = createClient(dbUrl);
+  const client = await createClientWithIPv4(dbUrl);
 
   try {
     await client.connect();

@@ -1,22 +1,30 @@
 import { Client } from 'pg';
-import * as net from 'net';
+import * as dns from 'dns';
+import { promisify } from 'util';
 
-// Patch net.connect to force IPv4
-const originalConnect = net.connect.bind(net);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(net as any).connect = function (
-  ...args: Parameters<typeof net.connect>
-): net.Socket {
-  const options = args[0];
-  if (typeof options === 'object' && options !== null && 'host' in options) {
-    (options as net.NetConnectOpts & { family?: number }).family = 4;
+const lookup = promisify(dns.lookup);
+
+async function resolveToIPv4(hostname: string): Promise<string> {
+  try {
+    const result = await lookup(hostname, { family: 4 });
+    return result.address;
+  } catch {
+    return hostname;
   }
-  return originalConnect(...args);
-};
+}
 
-export function createClient(connectionString: string): Client {
+export async function createClientWithIPv4(
+  connectionString: string
+): Promise<Client> {
+  const url = new URL(connectionString);
+  const ipv4Address = await resolveToIPv4(url.hostname);
+
   return new Client({
-    connectionString,
+    user: url.username,
+    password: decodeURIComponent(url.password),
+    host: ipv4Address,
+    port: parseInt(url.port) || 5432,
+    database: url.pathname.slice(1),
     ssl: { rejectUnauthorized: false },
   });
 }
