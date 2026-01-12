@@ -1,1 +1,1 @@
-{"version":3,"file":"db.d.ts","sourceRoot":"","sources":["file:///Users/anies1212/Desktop/supabase-diff-action/src/supabase/db.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,IAAI,CAAC;AAe5B,wBAAsB,oBAAoB,CACxC,gBAAgB,EAAE,MAAM,GACvB,OAAO,CAAC,MAAM,CAAC,CAYjB"}
+{"version":3,"file":"db.d.ts","sourceRoot":"","sources":["file:///Users/anies1212/Desktop/supabase-diff-action/src/supabase/db.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,IAAI,CAAC;AAqC5B,wBAAsB,oBAAoB,CACxC,gBAAgB,EAAE,MAAM,GACvB,OAAO,CAAC,MAAM,CAAC,CAYjB"}
