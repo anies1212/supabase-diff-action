@@ -37061,6 +37061,21 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getRlsPolicies = getRlsPolicies;
 const loader_1 = __nccwpck_require__(5281);
 const db_1 = __nccwpck_require__(2346);
+// Parse PostgreSQL array to JavaScript array
+function parseRoles(roles) {
+    if (Array.isArray(roles)) {
+        return roles;
+    }
+    if (typeof roles === 'string') {
+        // Handle PostgreSQL array format: {role1,role2}
+        const trimmed = roles.replace(/^\{|\}$/g, '');
+        if (trimmed === '') {
+            return [];
+        }
+        return trimmed.split(',');
+    }
+    return [];
+}
 async function getRlsPolicies(dbUrl, excludedSchemas) {
     const client = await (0, db_1.createClientWithIPv4)(dbUrl);
     try {
@@ -37073,7 +37088,7 @@ async function getRlsPolicies(dbUrl, excludedSchemas) {
             tableName: row.table_name,
             policyName: row.policy_name,
             permissive: row.permissive,
-            roles: row.roles,
+            roles: parseRoles(row.roles),
             cmd: row.cmd,
             qual: row.qual,
             withCheck: row.with_check,
@@ -37105,40 +37120,64 @@ async function getSchemas(dbUrl, excludedSchemas) {
         const indexesQuery = (0, loader_1.loadSql)(loader_1.SQL.INDEXES);
         const constraintsQuery = (0, loader_1.loadSql)(loader_1.SQL.CONSTRAINTS);
         const excludedSchemasStr = excludedSchemas.join(',');
-        const tablesResult = await client.query(tablesQuery, [excludedSchemasStr]);
-        const schemaPromises = tablesResult.rows.map(async (tableRow) => {
-            const schemaName = tableRow.schema_name;
-            const tableName = tableRow.table_name;
-            const [columnsResult, indexesResult, constraintsResult] = await Promise.all([
-                client.query(columnsQuery, [schemaName, tableName]),
-                client.query(indexesQuery, [schemaName, tableName]),
-                client.query(constraintsQuery, [schemaName, tableName]),
-            ]);
-            const columns = columnsResult.rows.map((row) => ({
+        // Fetch all data in parallel with 4 queries
+        const [tablesResult, columnsResult, indexesResult, constraintsResult] = await Promise.all([
+            client.query(tablesQuery, [excludedSchemasStr]),
+            client.query(columnsQuery, [excludedSchemasStr]),
+            client.query(indexesQuery, [excludedSchemasStr]),
+            client.query(constraintsQuery, [excludedSchemasStr]),
+        ]);
+        // Group columns by schema.table
+        const columnsMap = new Map();
+        for (const row of columnsResult.rows) {
+            const key = `${row.schema_name}.${row.table_name}`;
+            if (!columnsMap.has(key)) {
+                columnsMap.set(key, []);
+            }
+            columnsMap.get(key).push({
                 columnName: row.column_name,
                 dataType: row.data_type,
                 isNullable: row.is_nullable === 'YES',
                 columnDefault: row.column_default,
                 characterMaxLength: row.character_maximum_length,
-            }));
-            const indexes = indexesResult.rows.map((row) => ({
+            });
+        }
+        // Group indexes by schema.table
+        const indexesMap = new Map();
+        for (const row of indexesResult.rows) {
+            const key = `${row.schema_name}.${row.table_name}`;
+            if (!indexesMap.has(key)) {
+                indexesMap.set(key, []);
+            }
+            indexesMap.get(key).push({
                 indexName: row.index_name,
                 indexDef: row.index_def,
-            }));
-            const constraints = constraintsResult.rows.map((row) => ({
+            });
+        }
+        // Group constraints by schema.table
+        const constraintsMap = new Map();
+        for (const row of constraintsResult.rows) {
+            const key = `${row.schema_name}.${row.table_name}`;
+            if (!constraintsMap.has(key)) {
+                constraintsMap.set(key, []);
+            }
+            constraintsMap.get(key).push({
                 constraintName: row.constraint_name,
                 constraintType: row.constraint_type,
                 constraintDef: row.constraint_def,
-            }));
+            });
+        }
+        // Build table schemas
+        return tablesResult.rows.map((tableRow) => {
+            const key = `${tableRow.schema_name}.${tableRow.table_name}`;
             return {
-                schemaName,
-                tableName,
-                columns,
-                indexes,
-                constraints,
+                schemaName: tableRow.schema_name,
+                tableName: tableRow.table_name,
+                columns: columnsMap.get(key) || [],
+                indexes: indexesMap.get(key) || [],
+                constraints: constraintsMap.get(key) || [],
             };
         });
-        return Promise.all(schemaPromises);
     }
     finally {
         await client.end();

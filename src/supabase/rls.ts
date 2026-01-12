@@ -2,6 +2,22 @@ import { RlsPolicy } from '../types';
 import { loadSql, SQL } from '../sql/loader';
 import { createClientWithIPv4 } from './db';
 
+// Parse PostgreSQL array to JavaScript array
+function parseRoles(roles: unknown): string[] {
+  if (Array.isArray(roles)) {
+    return roles;
+  }
+  if (typeof roles === 'string') {
+    // Handle PostgreSQL array format: {role1,role2}
+    const trimmed = roles.replace(/^\{|\}$/g, '');
+    if (trimmed === '') {
+      return [];
+    }
+    return trimmed.split(',');
+  }
+  return [];
+}
+
 export async function getRlsPolicies(
   dbUrl: string,
   excludedSchemas: string[]
@@ -20,7 +36,7 @@ export async function getRlsPolicies(
       tableName: row.table_name,
       policyName: row.policy_name,
       permissive: row.permissive,
-      roles: row.roles,
+      roles: parseRoles(row.roles),
       cmd: row.cmd,
       qual: row.qual,
       withCheck: row.with_check,

@@ -17,50 +17,70 @@ export async function getSchemas(
     const constraintsQuery = loadSql(SQL.CONSTRAINTS);
 
     const excludedSchemasStr = excludedSchemas.join(',');
-    const tablesResult = await client.query(tablesQuery, [excludedSchemasStr]);
 
-    const schemaPromises = tablesResult.rows.map(async (tableRow) => {
-      const schemaName = tableRow.schema_name;
-      const tableName = tableRow.table_name;
+    // Fetch all data in parallel with 4 queries
+    const [tablesResult, columnsResult, indexesResult, constraintsResult] =
+      await Promise.all([
+        client.query(tablesQuery, [excludedSchemasStr]),
+        client.query(columnsQuery, [excludedSchemasStr]),
+        client.query(indexesQuery, [excludedSchemasStr]),
+        client.query(constraintsQuery, [excludedSchemasStr]),
+      ]);
 
-      const [columnsResult, indexesResult, constraintsResult] =
-        await Promise.all([
-          client.query(columnsQuery, [schemaName, tableName]),
-          client.query(indexesQuery, [schemaName, tableName]),
-          client.query(constraintsQuery, [schemaName, tableName]),
-        ]);
-
-      const columns: TableColumn[] = columnsResult.rows.map((row) => ({
+    // Group columns by schema.table
+    const columnsMap = new Map<string, TableColumn[]>();
+    for (const row of columnsResult.rows) {
+      const key = `${row.schema_name}.${row.table_name}`;
+      if (!columnsMap.has(key)) {
+        columnsMap.set(key, []);
+      }
+      columnsMap.get(key)!.push({
         columnName: row.column_name,
         dataType: row.data_type,
         isNullable: row.is_nullable === 'YES',
         columnDefault: row.column_default,
         characterMaxLength: row.character_maximum_length,
-      }));
+      });
+    }
 
-      const indexes: TableIndex[] = indexesResult.rows.map((row) => ({
+    // Group indexes by schema.table
+    const indexesMap = new Map<string, TableIndex[]>();
+    for (const row of indexesResult.rows) {
+      const key = `${row.schema_name}.${row.table_name}`;
+      if (!indexesMap.has(key)) {
+        indexesMap.set(key, []);
+      }
+      indexesMap.get(key)!.push({
         indexName: row.index_name,
         indexDef: row.index_def,
-      }));
+      });
+    }
 
-      const constraints: TableConstraint[] = constraintsResult.rows.map(
-        (row) => ({
-          constraintName: row.constraint_name,
-          constraintType: row.constraint_type,
-          constraintDef: row.constraint_def,
-        })
-      );
+    // Group constraints by schema.table
+    const constraintsMap = new Map<string, TableConstraint[]>();
+    for (const row of constraintsResult.rows) {
+      const key = `${row.schema_name}.${row.table_name}`;
+      if (!constraintsMap.has(key)) {
+        constraintsMap.set(key, []);
+      }
+      constraintsMap.get(key)!.push({
+        constraintName: row.constraint_name,
+        constraintType: row.constraint_type,
+        constraintDef: row.constraint_def,
+      });
+    }
 
+    // Build table schemas
+    return tablesResult.rows.map((tableRow) => {
+      const key = `${tableRow.schema_name}.${tableRow.table_name}`;
       return {
-        schemaName,
-        tableName,
-        columns,
-        indexes,
-        constraints,
+        schemaName: tableRow.schema_name,
+        tableName: tableRow.table_name,
+        columns: columnsMap.get(key) || [],
+        indexes: indexesMap.get(key) || [],
+        constraints: constraintsMap.get(key) || [],
       };
     });
-
-    return Promise.all(schemaPromises);
   } finally {
     await client.end();
   }
