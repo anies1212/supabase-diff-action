@@ -36971,14 +36971,22 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createClient = createClient;
 const pg_1 = __nccwpck_require__(3273);
-const dns = __importStar(__nccwpck_require__(2250));
-// Force IPv4 resolution for DNS lookups
-dns.setDefaultResultOrder('ipv4first');
+const net = __importStar(__nccwpck_require__(9278));
+// Patch net.connect to force IPv4
+const originalConnect = net.connect.bind(net);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+net.connect = function (...args) {
+    const options = args[0];
+    if (typeof options === 'object' && options !== null && 'host' in options) {
+        options.family = 4;
+    }
+    return originalConnect(...args);
+};
 function createClient(connectionString) {
-    const config = {
+    return new pg_1.Client({
         connectionString,
-    };
-    return new pg_1.Client(config);
+        ssl: { rejectUnauthorized: false },
+    });
 }
 
 
