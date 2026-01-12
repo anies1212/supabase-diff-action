@@ -173,8 +173,8 @@ function buildSummaryRow(category: string, counts: DiffCounts): string {
   }
 
   const details: string[] = [];
-  if (counts.onlyInSource > 0) details.push(`🆕 ${counts.onlyInSource}`);
-  if (counts.onlyInTarget > 0) details.push(`🗑️ ${counts.onlyInTarget}`);
+  if (counts.onlyInSource > 0) details.push(`🟢 ${counts.onlyInSource}`);
+  if (counts.onlyInTarget > 0) details.push(`🔵 ${counts.onlyInTarget}`);
   if (counts.different > 0) details.push(`🔄 ${counts.different}`);
 
   return `| ${category} | ⚠️ Differences | ${details.join(' ')} |`;
@@ -198,7 +198,7 @@ function buildEdgeFunctionsSection(
     lines.push('');
 
     if (result.onlyInDev.length > 0) {
-      lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+      lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
       lines.push('');
       lines.push('| Function | Version | Status |');
       lines.push('|----------|---------|--------|');
@@ -210,7 +210,7 @@ function buildEdgeFunctionsSection(
 
     if (result.onlyInPrd.length > 0) {
       lines.push(
-        `#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`
+        `#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`
       );
       lines.push('');
       lines.push('| Function | Version | Status |');
@@ -259,7 +259,7 @@ function buildRlsPoliciesSection(
     lines.push('');
 
     if (result.onlyInDev.length > 0) {
-      lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+      lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
       lines.push('');
       lines.push('| Table | Policy | Command | Roles |');
       lines.push('|-------|--------|---------|-------|');
@@ -273,7 +273,7 @@ function buildRlsPoliciesSection(
 
     if (result.onlyInPrd.length > 0) {
       lines.push(
-        `#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`
+        `#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`
       );
       lines.push('');
       lines.push('| Table | Policy | Command | Roles |');
@@ -324,7 +324,7 @@ function buildSqlFunctionsSection(
     lines.push('');
 
     if (result.onlyInDev.length > 0) {
-      lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+      lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
       lines.push('');
       lines.push('| Schema | Function | Return Type | Language |');
       lines.push('|--------|----------|-------------|----------|');
@@ -339,7 +339,7 @@ function buildSqlFunctionsSection(
 
     if (result.onlyInPrd.length > 0) {
       lines.push(
-        `#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`
+        `#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`
       );
       lines.push('');
       lines.push('| Schema | Function | Return Type | Language |');
@@ -394,7 +394,7 @@ function buildSchemasSection(
     lines.push('');
 
     if (result.onlyInDev.length > 0) {
-      lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+      lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
       lines.push('');
       lines.push('| Schema | Table | Columns |');
       lines.push('|--------|-------|---------|');
@@ -408,7 +408,7 @@ function buildSchemasSection(
 
     if (result.onlyInPrd.length > 0) {
       lines.push(
-        `#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`
+        `#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`
       );
       lines.push('');
       lines.push('| Schema | Table | Columns |');

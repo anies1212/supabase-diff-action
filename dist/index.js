@@ -36476,9 +36476,9 @@ function buildSummaryRow(category, counts) {
     }
     const details = [];
     if (counts.onlyInSource > 0)
-        details.push(`🆕 ${counts.onlyInSource}`);
+        details.push(`🟢 ${counts.onlyInSource}`);
     if (counts.onlyInTarget > 0)
-        details.push(`🗑️ ${counts.onlyInTarget}`);
+        details.push(`🔵 ${counts.onlyInTarget}`);
     if (counts.different > 0)
         details.push(`🔄 ${counts.different}`);
     return `| ${category} | ⚠️ Differences | ${details.join(' ')} |`;
@@ -36496,7 +36496,7 @@ function buildEdgeFunctionsSection(diffs) {
         lines.push(`### ${label.source} → ${label.target}`);
         lines.push('');
         if (result.onlyInDev.length > 0) {
-            lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+            lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
             lines.push('');
             lines.push('| Function | Version | Status |');
             lines.push('|----------|---------|--------|');
@@ -36506,7 +36506,7 @@ function buildEdgeFunctionsSection(diffs) {
             lines.push('');
         }
         if (result.onlyInPrd.length > 0) {
-            lines.push(`#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`);
+            lines.push(`#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`);
             lines.push('');
             lines.push('| Function | Version | Status |');
             lines.push('|----------|---------|--------|');
@@ -36544,7 +36544,7 @@ function buildRlsPoliciesSection(diffs) {
         lines.push(`### ${label.source} → ${label.target}`);
         lines.push('');
         if (result.onlyInDev.length > 0) {
-            lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+            lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
             lines.push('');
             lines.push('| Table | Policy | Command | Roles |');
             lines.push('|-------|--------|---------|-------|');
@@ -36554,7 +36554,7 @@ function buildRlsPoliciesSection(diffs) {
             lines.push('');
         }
         if (result.onlyInPrd.length > 0) {
-            lines.push(`#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`);
+            lines.push(`#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`);
             lines.push('');
             lines.push('| Table | Policy | Command | Roles |');
             lines.push('|-------|--------|---------|-------|');
@@ -36592,7 +36592,7 @@ function buildSqlFunctionsSection(diffs) {
         lines.push(`### ${label.source} → ${label.target}`);
         lines.push('');
         if (result.onlyInDev.length > 0) {
-            lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+            lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
             lines.push('');
             lines.push('| Schema | Function | Return Type | Language |');
             lines.push('|--------|----------|-------------|----------|');
@@ -36603,7 +36603,7 @@ function buildSqlFunctionsSection(diffs) {
             lines.push('');
         }
         if (result.onlyInPrd.length > 0) {
-            lines.push(`#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`);
+            lines.push(`#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`);
             lines.push('');
             lines.push('| Schema | Function | Return Type | Language |');
             lines.push('|--------|----------|-------------|----------|');
@@ -36643,7 +36643,7 @@ function buildSchemasSection(diffs) {
         lines.push(`### ${label.source} → ${label.target}`);
         lines.push('');
         if (result.onlyInDev.length > 0) {
-            lines.push(`#### 🆕 Only in ${label.source} (${result.onlyInDev.length})`);
+            lines.push(`#### 🟢 Only in ${label.source} (${result.onlyInDev.length})`);
             lines.push('');
             lines.push('| Schema | Table | Columns |');
             lines.push('|--------|-------|---------|');
@@ -36653,7 +36653,7 @@ function buildSchemasSection(diffs) {
             lines.push('');
         }
         if (result.onlyInPrd.length > 0) {
-            lines.push(`#### 🗑️ Only in ${label.target} (${result.onlyInPrd.length})`);
+            lines.push(`#### 🔵 Only in ${label.target} (${result.onlyInPrd.length})`);
             lines.push('');
             lines.push('| Schema | Table | Columns |');
             lines.push('|--------|-------|---------|');
