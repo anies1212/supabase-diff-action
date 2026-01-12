@@ -27,9 +27,41 @@ In your repository's Settings > Secrets and variables > Actions, add:
 |-------------|-------------|------------|
 | `SUPABASE_ACCESS_TOKEN` | Management API token | [Supabase Dashboard](https://supabase.com/dashboard/account/tokens) |
 | `SUPABASE_DEV_PROJECT_REF` | Dev environment project ref | Project Settings > General |
-| `SUPABASE_DEV_DB_URL` | Dev environment DB connection URL | Project Settings > Database |
+| `SUPABASE_DEV_DB_URL` | Dev environment DB connection URL | See [Database URL Format](#database-url-format) below |
 | `SUPABASE_PRD_PROJECT_REF` | Prod environment project ref | Project Settings > General |
-| `SUPABASE_PRD_DB_URL` | Prod environment DB connection URL | Project Settings > Database |
+| `SUPABASE_PRD_DB_URL` | Prod environment DB connection URL | See [Database URL Format](#database-url-format) below |
+
+### Database URL Format
+
+> **⚠️ Important:** You must use the **Transaction Pooler** connection URL. The legacy `db.[project-ref].supabase.co` format is deprecated and will not work.
+
+**How to get the correct URL:**
+
+1. Go to your Supabase project dashboard
+2. Click the **"Connect"** button (green button in the top right)
+3. Select **"Transaction Pooler"** (port 6543)
+4. Copy the connection string
+
+**Correct format:**
+```
+postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
+```
+
+**Example:**
+```
+postgresql://postgres.abcdefghijklmnop:your-password@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
+```
+
+**Why Transaction Pooler?**
+- GitHub Actions runners only support **IPv4** connections
+- The Transaction Pooler endpoint has IPv4 addresses, while the legacy direct connection (`db.[ref].supabase.co`) may not resolve
+- Transaction Pooler is optimized for short-lived connections like CI/CD pipelines
+
+| Connection Type | Port | GitHub Actions | Use Case |
+|-----------------|------|----------------|----------|
+| Transaction Pooler | 6543 | ✅ Recommended | Short-lived connections |
+| Session Pooler | 5432 | ✅ Works | Longer connections |
+| Direct Connection | 5432 | ❌ May not work | Local development only |
 
 ### 2. Create Workflow File
 
