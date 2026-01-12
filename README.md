@@ -17,6 +17,20 @@ Catch deployment discrepancies and environment inconsistencies early to maintain
 - Post readable Markdown-formatted comments to Pull Requests
 - Option to fail CI when differences are detected
 
+## Limitations
+
+### Edge Functions
+
+Edge Functions comparison is limited to **metadata only** (name, version, status). The Supabase Management API does not expose the function source code, so we cannot compare the actual implementation.
+
+| What we can compare | What we cannot compare |
+|---------------------|------------------------|
+| Function existence | Source code |
+| Version number | Function logic |
+| Status | Dependencies |
+
+**Note:** Different version numbers indicate different deployment counts, not necessarily different code. If you need source code comparison, manage your Edge Functions in your Git repository and use standard diff tools.
+
 ## Quick Start
 
 ### 1. Configure Secrets
